@@ -1,5 +1,9 @@
 using System;
-
+/**
+ * Demo : Sends 'Action' and 'EOwatch' to FormsFileWatcher.
+ * Friedhold Matz - 04.11.2017
+ *
+ /
 namespace FileWrite
 {
     class Program
