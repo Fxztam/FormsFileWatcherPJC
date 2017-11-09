@@ -7,8 +7,8 @@ package fwatch.pjc.fm;
 class Version
 { 
   // definig of PJC_VERSION_STRING ::    major.minor.revision.build
-  private static final String PJC_VERSION_STRING  = "00.02.01.171102";
-  private static final int    PJC_VERSION_INTEGER =       201171102;
+  private static final String PJC_VERSION_STRING  = "00.02.01.171109";
+  private static final int    PJC_VERSION_INTEGER =       201171109;
     
   private Version() {  
   }

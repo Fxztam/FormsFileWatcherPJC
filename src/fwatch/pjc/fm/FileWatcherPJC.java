@@ -1,10 +1,5 @@
 package fwatch.pjc.fm;
 
-/**
- * @author Friedhold Matz, October 2017.
- * 
- */
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,7 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.lang.Thread.State;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,16 +24,15 @@ import oracle.forms.handler.IHandler;
 import oracle.forms.properties.ID;
 import oracle.forms.ui.CustomEvent;
 import oracle.forms.ui.VBean;
-import oracle.forms.api.FException; 
 
 /**
  * Description of Windows File Watcher Service PJC for Oracle Forms:
  * ----------------------------------------------------------------------------- 
- * File Watcher Service for Oracle Forms as included PJC on the client side 
- * can work as a Back-End File Service for Oracle Forms. It's interacting 
- * with other program components on Windows desktops or easily waiting 
- * on desktop events marked as "watching event" files in a user defined 
- * temporary directory. 
+ * File Watcher Service for Oracle Forms can work as a back-end file or 
+ * event service for Oracle Forms on the client side. 
+ * It's interacting with other program components on Windows desktops or 
+ * easily waiting on desktop events marked as "watching event" files 
+ * in a user defined temporary directory. 
  * 
  * A File Watcher Service is represented as a "One Way Directory Watcher Service", 
  * e.g.: 
@@ -48,17 +41,13 @@ import oracle.forms.api.FException;
  *   FORMS =>  [dir\others] => OTHERS
  *   FORMS <=  [dir\forms]  <= OTHERS .
  *
- * You can "Send Actions" / "Receive Results" to/from other File Watcher
- * Services written in e.g. C, C#, GO, Python .. desktop programming languages;
- * a simple file format is used at the moment: - for "Send Action" ::
+ * You can "Send Actions" / "Receive Results" to or from other File Watcher
+ * Services written in other desktop programming languages.
+ * A simple file format is used: - for "Send Action" ::
  * ACTION|Para1|Para2|..|ParaN - for "Receive Result" ::
  * ACTION|Result1|Result2|..|ResultN .
- * (Send & Receive mean write & read files here.)
  * 
- * The Watcher Service can be terminated by sending 'EOwatchService.watch' into the
- * Watcher Directory.
- * 
- * Project in October 2017 - PoC - Version : 0.02.01 
+ * The Watcher Service can be terminated by sending 'EOwatchService.watch'.
  *
  * @author  : Friedhold Matz - Friedhold.Matz@yahoo.com
  * -----------------------------------------------------------------------------
@@ -70,14 +59,13 @@ public class FileWatcherPJC extends VBean implements Runnable {
    /* ( EO / BO means: "End of .." / "Begin of .." . ) */
     
    /* -- BO Forms PJC section --- */
-    private static final String DEFAULTMESSAGE = "$$$ PID(WinWatcherPJC) not available. $$$";
+    private static final String DEFAULTMESSAGE = "PID(WinWatcherPJC)";
 
    /** Set   ::  Forms sends => PJC    (Forms sends)
     *  Get   ::  PJC   sends => Forms  (Forms receives)
     *  Event ::  PJC   sends => Forms  (Forms receives)
     */
     public static final ID SETSTARTSERVER = ID.registerProperty("SetStartServer");
-    public static final ID SETSTOPSERVER  = ID.registerProperty("SetStopServer");
     public static final ID SETKILLSERVER  = ID.registerProperty("SetKillServer");
 
     public static final ID EVENTGETMSG    = ID.registerProperty("EventGetMsg");
@@ -96,14 +84,6 @@ public class FileWatcherPJC extends VBean implements Runnable {
     // "send subDir action..|result.." 
     public static final ID SENDACTION2OTHERS = ID.registerProperty("SendAction2Others");
     public static final ID SENDRESULT2OTHERS = ID.registerProperty("SendResult2Others");
-       
-    /* --- PJC self check --- */
-    public static final ID SETCHKGETMSG    = ID.registerProperty("SetChkGetMsg");
-    public static final ID EVENTCHKGETMSG  = ID.registerProperty("EventChkGetMsg");
-    public static final ID GETCHKMSG       = ID.registerProperty("GetChkMsg");
-
-    /* --- BO version & logger --- */
-    public static final ID SETLOGGEROFF    = ID.registerProperty("SetLOGOFF");
     
     public static final ID OS              = ID.registerProperty("GetOS");
     public static final ID OSVERSION       = ID.registerProperty("GetOSVERSION");
@@ -160,7 +140,8 @@ public class FileWatcherPJC extends VBean implements Runnable {
         if (handler != null) {
             mHandler = handler;
             super.init(handler);
-            Ilog.setLogLevel(Level.FINER);
+            //Ilog.setLogLevel(Level.FINEST);
+            Ilog.setLogOFF();
             Ilog.logInfo("--- EO-Init(IHandler) ---");
         }
     }                                                   
@@ -172,7 +153,7 @@ public class FileWatcherPJC extends VBean implements Runnable {
         if (SETSTARTSERVER.getName().equalsIgnoreCase(pStr)) {
             mBmsg = false;
             mMessage = "";
-            if (!((val == null) || (val == " ") || (val == ""))) {
+            if (val.length()>0) {
                 mSubDir = val;
             } else {
                 mSubDir = DEFAULTSUBDIR;
@@ -181,22 +162,6 @@ public class FileWatcherPJC extends VBean implements Runnable {
             startThread();
             return true;
         } // EO SETSTARTSERVER
-        else if (SETSTOPSERVER.getName().equalsIgnoreCase(pStr)) {
-            // parameter EOWATCH OR empty
-            if ((val.equalsIgnoreCase(EOWATCH))
-                || (val == null) || (val == " ") || (val == "")) {
-                // --------------------------------------------------------
-                // stop service per "EOwatchService.watch" - file watching
-                // at first stop watching then from there stopThread() !   
-                // --------------------------------------------------------  
-                Ilog.logFine("--- SETSTOPSERVER selected --- : "+ "val=\'" +val+ "\'");
-                mPauseThread = true; // stop Thread !
-                writeEOservice();     // <<< SENSE <<<
-            } else {
-                Ilog.logError("$$$ SETSTOPSERVER(parameter: EOWATCH ) $$$: val=\'"+ val +"\'");
-            } // EO parameter EOWATCH
-            return true;
-        } // EO SETSTOPSERVER
         else if (SETKILLSERVER.getName().equalsIgnoreCase(pStr)) {
             try {
                 Ilog.logFine("--- SETKILLSERVER selected ---");
@@ -242,23 +207,7 @@ public class FileWatcherPJC extends VBean implements Runnable {
             }
             return true;
         } // EO SENDRESULT2OTHERS
-        // set(msg) => back call => get(msg)
-        else if (SETCHKGETMSG.getName().equalsIgnoreCase(pStr)) {
-            Ilog.logInfo("--- SETCHKGETMSG(simulate Set&Get) ---");
-            try {
-                // set & get check.
-                mHandler.setProperty(GETCHKMSG, "GETCHKMSG(simulate Set&Get)");
-            } catch (FException e) {
-                Ilog.logException("$$$ GETCHKMSG(simulate Set&Get) $$$", e);
-            }
-            CustomEvent ce = new CustomEvent(mHandler, EVENTCHKGETMSG);
-            dispatchCustomEvent(ce);
-            return true;
-        } // EO SETCHKGETMSG
-        else if (SETLOGGEROFF.getName().equalsIgnoreCase(pStr)) {
-            Ilog.setLogOFF();
-            return true;        
-        } // EO SETLOGGEROFF
+   
         else {
             Ilog.logError("$$$ SetProperty - Parameter: "+ pStr);
             return super.setProperty(property, value);
@@ -286,8 +235,8 @@ public class FileWatcherPJC extends VBean implements Runnable {
             return Version.getJavaTempDir();
         }
         // --- pid not found ! ---
-        Ilog.logError(DEFAULTMESSAGE + " : " + property.toString());
-        return DEFAULTMESSAGE + " : " + property.toString();
+        Ilog.logInfo(DEFAULTMESSAGE);
+        return DEFAULTMESSAGE;
     }
 
     // starts or resume the thread here one time !
@@ -298,23 +247,7 @@ public class FileWatcherPJC extends VBean implements Runnable {
             mKillThread  = false;
             mRunnerThread.start();
             Ilog.logFine("--- New Watcher thread started ! ---");
-        } else {
-            // --- restarted ---
-            Ilog.logFine("--- Watcher thread re-started ! ---");
-            resumeThread();
-        }
-    }
-
-    // stops the thread here
-    private void stopThread() throws IOException, InterruptedException {
-        
-        if (mRunnerThread != null) {
-            Thread.sleep(1000);
-            pauseThread();
-            Ilog.logFine("--- Watcher thread stoped ! ---");
-        } else {
-            Ilog.logFine("--- Watcher thread not stoped, m_runnerThread is null ! ---"); 
-        }
+        } 
     }
     
     // command from extern !
@@ -336,37 +269,7 @@ public class FileWatcherPJC extends VBean implements Runnable {
             Ilog.logFine("--- killing Thread : m_runnerThread is null ! --- "); 
         }
     }
-        
-    private void pauseThread() {
-        synchronized (mPausedLock) {
-            if (Thread.currentThread().getName().equalsIgnoreCase(WATCHERTHREAD)) {
-                mPauseThread = true;     // stop polling !
-                while (mPauseThread) {
-                    try {
-                        Ilog.logFine("--- pauseThread ---");
-                        mPausedLock.wait();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-        }
-    }
-
-    private void resumeThread() {
-        synchronized (mPausedLock) {
-            if (State.WAITING.equals(mRunnerThread.getState())) {
-                Ilog.logFine("--- resumeThread ---");
-                mPauseThread = false;
-                mPausedLock.notifyAll();
-            }
-        }
-    }
     
-    private boolean getServerState() {
-        return (mRunnerThread != null) && (!mPauseThread);
-    }
-
     private void writeEOservice() {   
         try {
             // --------------------------------------------------------
@@ -619,13 +522,6 @@ public class FileWatcherPJC extends VBean implements Runnable {
                 Ilog.logFine("--- Sendmessage= " + mMessage);
                 sendWatch2Forms(mMessage);
                 mBmsg = false;
-                if (mMessage.equalsIgnoreCase(EOSERVICE)) {
-                    try {
-                        stopThread();
-                    } catch (IOException | InterruptedException e) {
-                        Ilog.logException("$$$ stopThread() $$$: " + mMessage, e);
-                    }
-                }
             }   
             
             Ilog.logFinest("§§§ BEFORE LAST break ! §§§");
@@ -633,16 +529,9 @@ public class FileWatcherPJC extends VBean implements Runnable {
             if (mKillThread) {
                 Ilog.logFine("--- Thread killing() :: RETURN . ---");
                 break;  // >>> kill Thread !
-                
-            } else if (mPauseThread) {
-                try {
-                    Ilog.logFine("--- Thread stopping() :: WAIT . ---");
-                    stopThread();
-                } catch (IOException | InterruptedException e) {
-                    Ilog.logException("$$$ Thread sleep() $$$", e);
-                } 
             } else {
-                Ilog.logError("$$$ NOT defined state !!! $$$");    
+                Ilog.logError("$$$ NOT defined state !!! $$$");   
+                break;
             }                  
         } // EO "whiles (m_runner == Thread.currentThread())"
         
