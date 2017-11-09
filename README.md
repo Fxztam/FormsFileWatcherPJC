@@ -11,4 +11,4 @@ Following usage was tested in Oracle Forms 12.2.1.2 :
 - *"SetKillServer"* .
 
 >**Note:**
->Logging is disabled: '*Ilog.setLogOFF(); (line 144)*'
+>Logging is disabled: *Ilog.setLogOFF(); (line 144)*
