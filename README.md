@@ -5,8 +5,8 @@ Oracle Forms File Watcher Service - Pluggable Java Component (PJC)
 Oracle Forms PJC
 Following usage tested in Oracle Forms 12.2.1.2 :
 
-- *'"SetStartServer"'*
-- *'"SetKillServer"'* .
+- *"SetStartServer"*
+- *"SetKillServer"* .
 
-## Note
-Logging is disabled: *'Ilog.setLogOFF(); (line 144)'*
+>**Note**
+>Logging is disabled: *'Ilog.setLogOFF(); (line 144)'*
