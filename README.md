@@ -14,4 +14,4 @@ The following usage has been tested in Oracle Forms 12.2.1.2 :
 >Logging is disabled: *Ilog.setLogOFF(); (line 144)*
 
 ## Status
-The FormsFileWatcherPJC is my first **Proof-of-Concept** for handling external events in multi tasking driven PJC's for Oracle Forms.
+The FormsFileWatcherPJC is my first Proof-of-Concept of multi tasking driven PJC's for Oracle Forms.
