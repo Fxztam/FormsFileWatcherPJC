@@ -1,5 +1,5 @@
 # FormsFileWatcherPJC
-Oracle Forms File Watcher Service - Pluggable Java Component (PJC)
+The Oracle Forms File Watcher PJC (Pluggable Java Component) is a multi tasking driven PJC Service for Oracle Forms.
 
 ## Installing 
 After download you can use the *FormsFileWatcherPJC.jar* and have to follow the signing with a certificate from a Trusted Sercurity Authority. 
@@ -14,4 +14,4 @@ The following usage has been tested in Oracle Forms 12.2.1.2 :
 >Logging is disabled: *Ilog.setLogOFF(); (line 144)*
 
 ## Status
-The FormsFileWatcherPJC is my first Proof-of-Concept of multi tasking driven PJC's for Oracle Forms.
+Proof of Concept
